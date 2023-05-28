@@ -1,0 +1,115 @@
+---
+title: "project"
+format: html
+editor: visual
+---
+
+## Model podstawowy ze zmiennymi jakoœciowymi
+
+### Wgrywanie danych
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(MEMSS)
+
+```
+
+### Analizowanie
+
+```{r}
+data("BodyWeight")
+glimpse(BodyWeight)
+```
+
+```{r}
+BodyWeight$a <- ifelse(BodyWeight$Diet == "a", 1, 0)
+BodyWeight$b <- ifelse(BodyWeight$Diet == "b", 1, 0)
+BodyWeight$c <- ifelse(BodyWeight$Diet == "c", 1, 0)
+
+
+model_BodyWeight <- lm(weight ~ a+b+c, data=BodyWeight)
+summary(model_BodyWeight)
+```
+
+```{r}
+ggplot(BodyWeight, aes(x = Diet, y = weight)) +
+  geom_boxplot() +
+  labs(x = "Diet", y = "Weight")
+```
+
+```{r}
+library(corrplot)
+cor_data <- BodyWeight[c("weight", "a", "b","c")]
+correlations <- cor(cor_data)
+corrplot(correlations, method = "circle", type = "upper", tl.col = "black", tl.srt = 45)
+```
+
+## Model podstawowy + wspó³liniowoœæ
+
+```{r}
+library(faraway)
+fat_data <- data(fat)
+glimpse(fat)
+```
+
+```{r}
+round(cor(fat), 2)
+
+corr <- cor(fat)
+
+# Create the correlation heatmap
+library(ggplot2)
+library(reshape2)
+library(RColorBrewer)
+
+ggplot(data = melt(corr), aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile() +
+  scale_fill_gradientn(colours = brewer.pal(11, "RdBu")) +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 3) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  xlab("") + ylab("") +
+  ggtitle("Correlation Heatmap") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+  
+```
+
+```{r}
+fat_model = lm(wrist ~ ., data = fat)
+summary(fat_model)
+vif(fat_model)
+
+fat_model1 = lm(wrist ~ . -siri - weight - brozek - abdom - free - adipos - thigh- chest - hip, data = fat)
+summary(fat_model1)
+vif(fat_model1)
+
+fat_model2 = lm(wrist ~ . -siri - weight - brozek - abdom - free - adipos - thigh- chest - hip - biceps, data = fat)
+summary(fat_model2)
+vif(fat_model2)
+```
+
+```{r}
+plot(fat_model2, 2)
+```
+
+## Model moderacji
+
+```{r}
+library(gvlma)
+xc <- c(scale(fat$chest, center=TRUE, scale=FALSE)) 
+zc <- c(scale(fat$thigh,  center=TRUE, scale=FALSE))
+```
+
+```{r}
+fitmod <- lm(data=fat, abdom ~ xc + zc + xc*zc)
+```
+
+```{r}
+summary(fitmod)
+gvlma(fitmod)
+```
+
+```{r}
+library(rockchalk)
+PS_fitmod  <- plotSlopes(fitmod, plotx="xc", modx="zc", xlab = "Obwód klatki piersiowej", ylab = "Obwód brzucha", modxVals = "std.dev")
+```
